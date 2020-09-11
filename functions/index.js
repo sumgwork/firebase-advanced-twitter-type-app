@@ -142,4 +142,44 @@ app.post("/signup", (req, res) => {
     });
 });
 
+// Login Route
+app.post("/login", (req, res) => {
+  const user = {
+    email: req.body.email,
+    password: req.body.password,
+  };
+
+  let errors = {};
+
+  if (isEmpty(user.email)) {
+    errors.email = "Must not be empty";
+  } else if (!isEmail(user.email)) {
+    errors.email = "Invalid";
+  }
+
+  if (isEmpty(user.password)) {
+    errors.password = "Must not be empty";
+  }
+
+  if (Object.keys(errors).length) {
+    return res.status(404).json(errors);
+  }
+
+  firebase
+    .auth()
+    .signInWithEmailAndPassword(user.email, user.password)
+    .then((data) => data.user.getIdToken())
+    .then((token) => res.json({ token }))
+    .catch((err) => {
+      console.error(err);
+      if (
+        err.code === "auth/wrong-password" ||
+        err.code === "auth/user-not-found"
+      ) {
+        return res.status(403).json({ general: "Invalid credentials!" });
+      }
+      return res.status(500).json({ error: err.code });
+    });
+});
+
 exports.api = functions.region("australia-southeast1").https.onRequest(app);
