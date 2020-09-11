@@ -56,6 +56,13 @@ app.post("/scream", (request, response) => {
     });
 });
 
+const isEmpty = (string) => string.trim() === "";
+
+const isEmail = (email) => {
+  const emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  return email.match(emailRegEx);
+};
+
 // Signup Route
 app.post("/signup", (req, res) => {
   const newUser = {
@@ -64,6 +71,30 @@ app.post("/signup", (req, res) => {
     confirmPassword: req.body.confirmPassword,
     handle: req.body.handle,
   };
+
+  let errors = {};
+
+  if (isEmpty(newUser.email)) {
+    errors.email = "Must not be empty";
+  } else if (!isEmail(newUser.email)) {
+    errors.email = "Invalid";
+  }
+
+  if (isEmpty(newUser.password)) {
+    errors.password = "Must not be empty";
+  }
+
+  if (newUser.password !== newUser.confirmPassword) {
+    errors.confirmPassword = "Passwords don't match";
+  }
+
+  if (isEmpty(newUser.handle)) {
+    errors.handle = "Must not be empty";
+  }
+
+  if (Object.keys(errors).length) {
+    return res.status(404).json(errors);
+  }
 
   let token, userId;
   // Validate data
