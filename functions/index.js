@@ -1,9 +1,7 @@
 const functions = require("firebase-functions");
-const admin = require("firebase-admin");
 const express = require("express");
 const firebase = require("firebase");
-
-admin.initializeApp();
+const { admin, db } = require("./util/admin");
 
 const app = express();
 
@@ -19,7 +17,39 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-const db = admin.firestore();
+const AuthM = (req, res, next) => {
+  let idToken;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    idToken = req.headers.authorization.split("Bearer ")[1];
+  } else {
+    console.error("No token");
+    res.status(403).json({ error: "Unauthorized" });
+  }
+
+  admin
+    .auth()
+    .verifyIdToken(idToken)
+    .then((decodedToken) => {
+      req.user = decodedToken;
+
+      return db
+        .collection("users")
+        .where("userId", "==", req.user.uid)
+        .limit(1)
+        .get();
+    })
+    .then((data) => {
+      req.user.handle = data.docs[0].data().handle;
+      return next();
+    })
+    .catch((err) => {
+      console.error("Error while verifying token", err);
+      return res.status(403).json(err);
+    });
+};
 
 app.get("/scream", (request, response) => {
   db.collection("screams")
@@ -38,10 +68,10 @@ app.get("/scream", (request, response) => {
     });
 });
 
-app.post("/scream", (request, response) => {
+app.post("/scream", AuthM, (request, response) => {
   const newScream = {
     body: request.body.body,
-    userHandle: request.body.userHandle,
+    userHandle: request.user.handle,
     createdAt: new Date().toISOString(),
   };
 
