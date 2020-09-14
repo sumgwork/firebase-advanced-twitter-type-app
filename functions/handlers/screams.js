@@ -178,7 +178,9 @@ exports.postComment = (req, res) => {
       if (!doc.exists) {
         return res.status(404).json({ error: "Scream not found" });
       }
-
+      return doc.ref.update({ commentCount: doc.data().commentCount + 1 });
+    })
+    .then(() => {
       return db.collection("comments").add(newComment);
     })
     .then(() => {
@@ -190,4 +192,27 @@ exports.postComment = (req, res) => {
     });
 };
 
-exports.deleteScream = (req, res) => {};
+exports.deleteScream = (req, res) => {
+  const document = db.doc(`/screams/${req.params.screamId}`);
+
+  document
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ error: "Scream not found" });
+      }
+      if (doc.data().userHandle !== req.user.handle) {
+        return res
+          .status(403)
+          .json({ error: "Unauthorized to delete this scream" });
+      }
+      return document.delete();
+    })
+    .then(() => {
+      res.json({ message: "Scream deleted successfully" });
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error: err.code });
+    });
+};
