@@ -5,6 +5,9 @@ const {
   postOneScream,
   getOneScream,
   postComment,
+  likeScream,
+  unlikeScream,
+  deleteScream,
 } = require("./handlers/screams");
 const {
   signup,
@@ -19,8 +22,9 @@ const app = express();
 app.get("/scream", getAllScreams);
 app.get("/scream/:screamId", getOneScream);
 app.post("/scream/:screamId/comment", AuthM, postComment);
-// app.delete("/scream/:screamId", deleteScream);
-// app.post("/scream/:screamId", likeScream);
+app.delete("/scream/:screamId", AuthM, deleteScream);
+app.post("/scream/:screamId/like", AuthM, likeScream);
+app.post("/scream/:screamId/unlike", AuthM, unlikeScream);
 app.post("/scream", AuthM, postOneScream);
 
 app.post("/signup", signup);
